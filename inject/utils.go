@@ -9,24 +9,52 @@ func Invoke[T any](c Container, fn any) (T, error) {
 	c2, ok := c.(*container)
 	var t T
 	if !ok {
-		return t, fmt.Errorf("unable to get return value from invoke, argument is not *container: %+v", c)
+		return t, fmt.Errorf("argument is not *container: %+v", c)
 	}
-	out, err := c2.invoke(reflect.ValueOf(fn))
-	if !out.CanInterface() {
-		return t, fmt.Errorf("unable get value from return: %+v", out)
+	fv := reflect.ValueOf(fn)
+	out, err := c2.invoke(fv)
+	if err != nil {
+		return t, err
+	}
+	if !out.IsValid() || !out.CanInterface() {
+		return t, fmt.Errorf("unable get valid return value from: %s got: %+v", funcInfo(fv), out)
 	}
 	v := out.Interface()
 	if tv, ok := v.(T); ok {
 		t = tv
 	} else {
 		typ := reflect.TypeOf(t)
-		return t, fmt.Errorf("unable convert return value to expected type: %s", typeName(typ))
+		return t, fmt.Errorf("unable convert return value to expected type from: %s got: %s %+v", funcInfo(fv), typeName(typ), v)
 	}
 	return t, err
 }
 
 func MustInvoke[T any](c Container, fn any) T {
 	out, err := Invoke[T](c, fn)
+	if err != nil {
+		panic(err)
+	}
+	return out
+}
+
+func Resolve[T any](c Container, typ T) (T, error) {
+	c2, ok := c.(*container)
+	var t T
+	if !ok {
+		return t, fmt.Errorf("argument is not *container: %+v", c)
+	}
+	out, err := c2.Resolve(typ)
+	if tv, ok := out.(T); ok {
+		t = tv
+	} else {
+		typ := reflect.TypeOf(t)
+		return t, fmt.Errorf("unable convert value to expected type: %s got: %+v", typeName(typ), out)
+	}
+	return t, err
+}
+
+func MustResolve[T any](c Container, typ T) T {
+	out, err := Resolve(c, typ)
 	if err != nil {
 		panic(err)
 	}
