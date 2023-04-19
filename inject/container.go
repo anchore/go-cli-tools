@@ -94,14 +94,14 @@ func alignReturn(t reflect.Type, v reflect.Value) any {
 	return v.Interface()
 }
 
-func (c *container) Invoke(fn any) error {
+func (c *container) Invoke(fn any, args ...interface{}) error {
 	v := reflect.ValueOf(fn)
-	_, err := c.invoke(v)
+	_, err := c.invoke(v, args...)
 	return err
 }
 
-func (c *container) MustInvoke(fn any) {
-	err := c.Invoke(fn)
+func (c *container) MustInvoke(fn any, args ...interface{}) {
+	err := c.Invoke(fn, args...)
 	if err != nil {
 		panic(err)
 	}
@@ -113,7 +113,7 @@ var (
 	containerInterface = reflect.TypeOf((*Container)(nil)).Elem()
 )
 
-func (c *container) invoke(fn reflect.Value) (reflect.Value, error) {
+func (c *container) invoke(fn reflect.Value, args ...interface{}) (reflect.Value, error) {
 	t := fn.Type()
 	if t.Kind() != reflect.Func {
 		return nilValue, fmt.Errorf("unable to invoke non-function type: %s : %+v", t.Name(), fn)

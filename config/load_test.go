@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/anchore/go-cli-tools/inject"
 	"github.com/anchore/go-cli-tools/log"
 	"github.com/anchore/go-logger/adapter/discard"
 )
@@ -26,9 +25,9 @@ type root struct {
 }
 
 func Test_LoadDefaults(t *testing.T) {
-	c, cmd, _, r, s, lc := setup(t)
+	cmd, cfg, r, s, lc := setup(t)
 
-	err := Load(c, cmd, lc, r)
+	err := Load(cfg, cmd, lc, r)
 	require.NoError(t, err)
 
 	require.Equal(t, "default-sv", s.Sv)
@@ -36,13 +35,13 @@ func Test_LoadDefaults(t *testing.T) {
 }
 
 func Test_LoadFromConfigFile(t *testing.T) {
-	c, cmd, cfg, r, s, _ := setup(t)
+	cmd, cfg, r, s, _ := setup(t)
 
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 	cfg.ConfigFile = path.Join(wd, "test-fixtures", "config.yaml")
 
-	err = Load(c, cmd, r)
+	err = Load(cfg, cmd, r)
 	require.NoError(t, err)
 
 	require.Equal(t, "config-sub-v", s.Sv)
@@ -53,9 +52,9 @@ func Test_LoadFromEnv(t *testing.T) {
 	t.Setenv("MY_APP_V", "env-var-v")
 	t.Setenv("MY_APP_SUB_SV", "env-var-sv")
 
-	c, cmd, _, r, s, _ := setup(t)
+	cmd, cfg, r, s, _ := setup(t)
 
-	err := Load(c, cmd, r)
+	err := Load(cfg, cmd, r)
 	require.NoError(t, err)
 
 	require.Equal(t, "env-var-sv", s.Sv)
@@ -66,13 +65,13 @@ func Test_LoadFromEnvOverridingConfigFile(t *testing.T) {
 	t.Setenv("MY_APP_V", "env-var-v")
 	t.Setenv("MY_APP_SUB_SV", "env-var-sv")
 
-	c, cmd, cfg, r, s, _ := setup(t)
+	cmd, cfg, r, s, _ := setup(t)
 
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 	cfg.ConfigFile = path.Join(wd, "test-fixtures", "config.yaml")
 
-	err = Load(c, cmd, r)
+	err = Load(cfg, cmd, r)
 	require.NoError(t, err)
 
 	require.Equal(t, "env-var-sv", s.Sv)
@@ -82,33 +81,33 @@ func Test_LoadFromEnvOverridingConfigFile(t *testing.T) {
 func Test_LoadSubStruct(t *testing.T) {
 	t.Setenv("MY_APP_SUB_SV", "env-var-sv")
 
-	c, cmd, cfg, _, s, _ := setup(t)
+	cmd, cfg, _, s, _ := setup(t)
 
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 	cfg.ConfigFile = path.Join(wd, "test-fixtures", "config.yaml")
 
-	err = LoadAt(c, cmd, "sub", s)
+	err = LoadAt(cfg, cmd, "sub", s)
 	require.NoError(t, err)
 
 	require.Equal(t, "env-var-sv", s.Sv)
 }
 
 func Test_LoadSubStructEnv(t *testing.T) {
-	c, cmd, cfg, _, s, _ := setup(t)
+	cmd, cfg, _, s, _ := setup(t)
 
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 	cfg.ConfigFile = path.Join(wd, "test-fixtures", "config.yaml")
 
-	err = LoadAt(c, cmd, "sub", s)
+	err = LoadAt(cfg, cmd, "sub", s)
 	require.NoError(t, err)
 
 	require.Equal(t, "config-sub-v", s.Sv)
 }
 
 func Test_LoadFromFlags(t *testing.T) {
-	c, cmd, _, r, s, _ := setup(t)
+	cmd, cfg, r, s, _ := setup(t)
 
 	err := cmd.PersistentFlags().Set("v", "flag-value-v")
 	require.NoError(t, err)
@@ -116,7 +115,7 @@ func Test_LoadFromFlags(t *testing.T) {
 	err = cmd.Flags().Set("sv", "flag-value-sv")
 	require.NoError(t, err)
 
-	err = Load(c, cmd, r)
+	err = Load(cfg, cmd, r)
 	require.NoError(t, err)
 
 	require.Equal(t, "flag-value-sv", s.Sv)
@@ -127,7 +126,7 @@ func Test_LoadFromFlagsOverridingAll(t *testing.T) {
 	t.Setenv("MY_APP_V", "env-var-v")
 	t.Setenv("MY_APP_SUB_SV", "env-var-sv")
 
-	c, cmd, cfg, r, s, _ := setup(t)
+	cmd, cfg, r, s, _ := setup(t)
 
 	wd, err := os.Getwd()
 	require.NoError(t, err)
@@ -139,18 +138,15 @@ func Test_LoadFromFlagsOverridingAll(t *testing.T) {
 	err = cmd.Flags().Set("sv", "flag-value-sv")
 	require.NoError(t, err)
 
-	err = Load(c, cmd, r)
+	err = Load(cfg, cmd, r)
 	require.NoError(t, err)
 
 	require.Equal(t, "flag-value-sv", s.Sv)
 	require.Equal(t, "flag-value-v", r.V)
 }
 
-func setup(t *testing.T) (inject.Container, *cobra.Command, *Config, *root, *sub, *log.Config) {
-	c := inject.NewContainer()
-
+func setup(t *testing.T) (*cobra.Command, Config, *root, *sub, *log.Config) {
 	cfg := NewConfig("my-app")
-	c.Bind(cfg)
 
 	s := &sub{
 		Sv:      "default-sv",
@@ -179,7 +175,7 @@ func setup(t *testing.T) (inject.Container, *cobra.Command, *Config, *root, *sub
 	flags = cmd.Flags()
 	flags.StringVarP(&s.Sv, "sv", "", s.Sv, "sv usage")
 
-	return c, cmd, cfg, r, s, logCfg
+	return cmd, cfg, r, s, logCfg
 }
 
 func Test_AllFieldTypes(t *testing.T) {
@@ -198,10 +194,7 @@ func Test_AllFieldTypes(t *testing.T) {
 		StringArray: []string{"stringArrayValue"},
 	}
 
-	c := inject.NewContainer()
-
 	cfg := NewConfig("app")
-	c.Bind(cfg)
 
 	cmd := &cobra.Command{}
 
@@ -210,7 +203,7 @@ func Test_AllFieldTypes(t *testing.T) {
 	flags.StringVarP(&a.String, "string", "", a.String, "string usage")
 	flags.StringArrayVarP(&a.StringArray, "string-array", "", a.StringArray, "string array usage")
 
-	err := Load(c, cmd, a)
+	err := Load(cfg, cmd, a)
 	require.NoError(t, err)
 
 	assert.Equal(t, true, a.Bool)
@@ -224,7 +217,7 @@ func Test_AllFieldTypes(t *testing.T) {
 	err = flags.Set("string-array", "stringArrayValueFlag")
 	require.NoError(t, err)
 
-	err = Load(c, cmd, a)
+	err = Load(cfg, cmd, a)
 	require.NoError(t, err)
 
 	assert.Equal(t, false, a.Bool)

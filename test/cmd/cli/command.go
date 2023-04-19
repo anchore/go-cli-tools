@@ -11,7 +11,7 @@ import (
 	"github.com/anchore/go-cli-tools/test/cmd/cli/options"
 )
 
-func Command(c inject.Container, formatOpts *options.Format) *cobra.Command {
+func Command(c inject.Container, cfg config.Config, formatOpts *options.Format) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "command",
 		Args: func(cmd *cobra.Command, args []string) error {
@@ -21,7 +21,7 @@ func Command(c inject.Container, formatOpts *options.Format) *cobra.Command {
 			c.Bind(options.InputSource{
 				InputSource: args[0],
 			})
-			return config.Load(c, cmd, formatOpts)
+			return config.Load(cfg, cmd, formatOpts)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return c.Invoke(app.Packages)

@@ -17,7 +17,7 @@ type Container interface {
 	Resolve(typ any) (any, error)
 
 	// Invoke invokes a function with injected parameters that may an error as the last value
-	Invoke(fn any) error
+	Invoke(fn any, args ...interface{}) error
 }
 
 // ProviderNotFoundError is a standard error that can be returned from a container.Get call

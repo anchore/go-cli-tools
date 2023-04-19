@@ -5,14 +5,14 @@ import (
 	"reflect"
 )
 
-func Invoke[T any](c Container, fn any) (T, error) {
+func Invoke[T any](c Container, fn any, args ...interface{}) (T, error) {
 	c2, ok := c.(*container)
 	var t T
 	if !ok {
 		return t, fmt.Errorf("argument is not *container: %+v", c)
 	}
 	fv := reflect.ValueOf(fn)
-	out, err := c2.invoke(fv)
+	out, err := c2.invoke(fv, args...)
 	if err != nil {
 		return t, err
 	}
@@ -29,8 +29,8 @@ func Invoke[T any](c Container, fn any) (T, error) {
 	return t, err
 }
 
-func MustInvoke[T any](c Container, fn any) T {
-	out, err := Invoke[T](c, fn)
+func MustInvoke[T any](c Container, fn any, args ...interface{}) T {
+	out, err := Invoke[T](c, fn, args...)
 	if err != nil {
 		panic(err)
 	}

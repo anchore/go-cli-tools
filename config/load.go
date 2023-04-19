@@ -15,20 +15,17 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"github.com/anchore/go-cli-tools/inject"
 	"github.com/anchore/go-cli-tools/log"
 )
 
-func Load(c inject.Container, cmd *cobra.Command, configurations ...any) error {
+func Load(cfg Config, cmd *cobra.Command, configurations ...any) error {
 	// e.g. pod.context = APPNAME_POD_CONTEXT
 	v := viper.NewWithOptions(viper.EnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_")))
 
-	return c.Invoke(func(cfg Config) error {
-		return load(v, cmd, cfg.AppName, cfg.ConfigFile, configurations...)
-	})
+	return load(v, cmd, cfg.AppName, cfg.ConfigFile, configurations...)
 }
 
-func LoadAt(c inject.Container, cmd *cobra.Command, path string, configuration any) error {
+func LoadAt(cfg Config, cmd *cobra.Command, path string, configuration any) error {
 	// allow for nested options to be specified via environment variables
 	// e.g. pod.context = APPNAME_POD_CONTEXT
 	v := viper.NewWithOptions(viper.EnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_")))
@@ -43,9 +40,7 @@ func LoadAt(c inject.Container, cmd *cobra.Command, path string, configuration a
 	value := reflect.New(config)
 	value.Elem().Field(0).Set(reflect.ValueOf(configuration))
 
-	return c.Invoke(func(cfg Config) error {
-		return load(v, cmd, cfg.AppName, cfg.ConfigFile, value.Interface())
-	})
+	return load(v, cmd, cfg.AppName, cfg.ConfigFile, value.Interface())
 }
 
 func upperFirst(p string) string {

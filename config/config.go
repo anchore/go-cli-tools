@@ -7,8 +7,8 @@ type Config struct {
 	ConfigFile string `json:"config,omitempty" yaml:"config,omitempty" mapstructure:"-"`
 }
 
-func NewConfig(appName string) *Config {
-	return &Config{
+func NewConfig(appName string) Config {
+	return Config{
 		AppName: appName,
 	}
 }
