@@ -119,7 +119,7 @@ func (c *container) invoke(fn reflect.Value) (reflect.Value, error) {
 		return nilValue, fmt.Errorf("unable to invoke non-function type: %s : %+v", t.Name(), fn)
 	}
 
-	in := make([]reflect.Value, t.NumIn(), t.NumIn())
+	in := make([]reflect.Value, t.NumIn())
 	for i := 0; i < t.NumIn(); i++ {
 		ft := t.In(i)
 		v, err := c.Resolve(ft)

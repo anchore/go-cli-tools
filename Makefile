@@ -110,12 +110,12 @@ format:  ## Auto-format all source code + run golangci lint fixers
 	$(call title,Running formatting)
 	gofmt -w -s .
 	$(GOIMPORTS_CMD) -w .
+	go mod tidy
 
 .PHONY: lint-fix
 lint-fix: format ## Auto-format all source code + run golangci lint fixers
 	$(call title,Running lint fixers)
 	$(LINT_CMD) --fix
-	go mod tidy
 
 .PHONY: check-licenses
 check-licenses:  ## Ensure transitive dependencies are compliant with the current license policy

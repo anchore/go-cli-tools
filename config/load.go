@@ -84,7 +84,7 @@ func load(v *viper.Viper, cmd *cobra.Command, appName string, configFile string,
 		appName += "."
 	}
 
-	flags := getFlags(cmd)
+	flags := getFlagRefs(cmd)
 
 	for _, cfg := range configurations {
 		configureViper(v, reflect.ValueOf(cfg), flags, appName, "")
@@ -106,9 +106,9 @@ func load(v *viper.Viper, cmd *cobra.Command, appName string, configFile string,
 }
 
 // configureViper loads the default configuration values into the viper instance, before the config values are read and parsed
-func configureViper(v *viper.Viper, value reflect.Value, flags []*pflag.Flag, appPrefix string, path string) {
-	for _, flag := range flags {
-		if valuesEqual(value, reflect.ValueOf(flag.Value)) {
+func configureViper(v *viper.Viper, value reflect.Value, flags flagRefs, appPrefix string, path string) {
+	if value.Type().Kind() == reflect.Ptr && value.Type().Elem().Kind() != reflect.Struct {
+		if flag, ok := flags[value.Pointer()]; ok {
 			log.Tracef("binding: %s = %v (flag)\n", strings.ToUpper(regexp.MustCompile("[^a-zA-Z0-9]").ReplaceAllString(appPrefix+path, "_")), value.Elem().Interface())
 			_ = v.BindPFlag(path, flag)
 			return
@@ -153,20 +153,32 @@ func configureViper(v *viper.Viper, value reflect.Value, flags []*pflag.Flag, ap
 	}
 }
 
-func valuesEqual(v1 reflect.Value, v2 reflect.Value) bool {
-	return v2.CanConvert(v1.Type()) && v1 == v2.Convert(v1.Type())
+type flagRefs map[uintptr]*pflag.Flag
+
+func getFlagRefs(cmd *cobra.Command) flagRefs {
+	refs := flagRefs{}
+	for _, flags := range []*pflag.FlagSet{cmd.PersistentFlags(), cmd.Flags()} {
+		flags.VisitAll(func(flag *pflag.Flag) {
+			v := reflect.ValueOf(flag.Value)
+			// check for struct types like stringArrayValue
+			if v.Type().Kind() == reflect.Ptr {
+				vf := v.Elem()
+				if vf.Type().Kind() == reflect.Struct {
+					if _, ok := vf.Type().FieldByName("value"); ok {
+						vf = vf.FieldByName("value")
+						if vf.IsValid() {
+							v = vf
+						}
+					}
+				}
+			}
+			refs[v.Pointer()] = flag
+		})
+	}
+	return refs
 }
 
-func getFlags(cmd *cobra.Command) (flags []*pflag.Flag) {
-	cmd.Flags().VisitAll(func(flag *pflag.Flag) {
-		flags = append(flags, flag)
-	})
-	cmd.PersistentFlags().VisitAll(func(flag *pflag.Flag) {
-		flags = append(flags, flag)
-	})
-	return
-}
-
+//nolint:unused
 func hasConfig(base string) bool {
 	for _, ext := range viper.SupportedExts {
 		if _, err := os.Stat(fmt.Sprintf("%s.%s", base, ext)); err != nil {

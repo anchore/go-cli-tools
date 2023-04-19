@@ -18,8 +18,6 @@ func SetLogger(logger logger.Logger) {
 
 func DefaultLogger(cfg Config) error {
 	switch cfg.Verbosity {
-	case 0:
-		cfg.Level = cfg.Level
 	case 1:
 		cfg.Level = InfoLevel
 	case 2:

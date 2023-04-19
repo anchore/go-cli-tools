@@ -85,7 +85,7 @@ func Singleton(provider any) any {
 	validateProvider(t, provider)
 	v := reflect.MakeFunc(baseFunc.Type(), func(args []reflect.Value) (results []reflect.Value) {
 		if value != nilValue {
-			results = make([]reflect.Value, t.NumOut(), t.NumOut())
+			results = make([]reflect.Value, t.NumOut())
 			results[0] = value
 			return
 		}

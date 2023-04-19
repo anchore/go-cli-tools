@@ -1,11 +1,11 @@
 package cli
 
 import (
-	"github.com/anchore/go-cli-tools/log"
 	"github.com/spf13/cobra"
 
 	"github.com/anchore/go-cli-tools/config"
 	"github.com/anchore/go-cli-tools/inject"
+	"github.com/anchore/go-cli-tools/log"
 	"github.com/anchore/go-cli-tools/test/cmd/cli/options"
 )
 

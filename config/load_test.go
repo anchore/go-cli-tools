@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/anchore/go-cli-tools/inject"
@@ -179,4 +180,54 @@ func setup(t *testing.T) (inject.Container, *cobra.Command, *Config, *root, *sub
 	flags.StringVarP(&s.Sv, "sv", "", s.Sv, "sv usage")
 
 	return c, cmd, cfg, r, s, logCfg
+}
+
+func Test_AllFieldTypes(t *testing.T) {
+	t.Setenv("APP_BOOL", "true")
+	t.Setenv("APP_STRING", "stringValueEnv")
+	t.Setenv("APP_STRING_ARRAY", "stringArrayValueEnv")
+
+	type all struct {
+		Bool        bool     `mapstructure:"bool"`
+		String      string   `mapstructure:"string"`
+		StringArray []string `mapstructure:"string-array"`
+	}
+
+	a := &all{
+		String:      "stringValue",
+		StringArray: []string{"stringArrayValue"},
+	}
+
+	c := inject.NewContainer()
+
+	cfg := NewConfig("app")
+	c.Bind(cfg)
+
+	cmd := &cobra.Command{}
+
+	flags := cmd.Flags()
+	flags.BoolVarP(&a.Bool, "bool", "", a.Bool, "bool usage")
+	flags.StringVarP(&a.String, "string", "", a.String, "string usage")
+	flags.StringArrayVarP(&a.StringArray, "string-array", "", a.StringArray, "string array usage")
+
+	err := Load(c, cmd, a)
+	require.NoError(t, err)
+
+	assert.Equal(t, true, a.Bool)
+	assert.Equal(t, "stringValueEnv", a.String)
+	assert.Equal(t, []string{"stringArrayValueEnv"}, a.StringArray)
+
+	err = flags.Set("bool", "false")
+	require.NoError(t, err)
+	err = flags.Set("string", "stringValueFlag")
+	require.NoError(t, err)
+	err = flags.Set("string-array", "stringArrayValueFlag")
+	require.NoError(t, err)
+
+	err = Load(c, cmd, a)
+	require.NoError(t, err)
+
+	assert.Equal(t, false, a.Bool)
+	assert.Equal(t, "stringValueFlag", a.String)
+	assert.Equal(t, []string{"stringArrayValueFlag"}, a.StringArray)
 }
