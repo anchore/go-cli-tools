@@ -16,20 +16,21 @@ type Container interface {
 	// Resolve returns the resolved value for a given type, e.g. value, err := c.Resolve(Type{})
 	Resolve(typ any) (any, error)
 
-	// Invoke invokes a function with injected parameters that may an error as the last value
-	Invoke(fn any, args ...interface{}) error
+	// Invoke invokes a function with injected parameters and provided, ordered parameters that may optionally return a
+	// value and optionally return a single an error as the last function signature
+	Invoke(fn any, args ...any) (any, error)
 }
 
-// ProviderNotFoundError is a standard error that can be returned from a container.Get call
-type ProviderNotFoundError struct {
+// UnresolvedError is a standard error that can be returned from a container.Get call
+type UnresolvedError struct {
 	typ reflect.Type
 }
 
-func (n ProviderNotFoundError) Error() string {
-	return fmt.Sprintf("provider not found for: %s", typeName(n.typ))
+func (n UnresolvedError) Error() string {
+	return fmt.Sprintf("unresolved: '%s'", typeName(n.typ))
 }
 
-var _ error = (*ProviderNotFoundError)(nil)
+var _ error = (*UnresolvedError)(nil)
 
-// ProviderNotFound can be used to check if a Get call returns a "not found" error
-var ProviderNotFound = ProviderNotFoundError{}
+// Unresolved can be used to check if a Get call returns a "not found" error
+var Unresolved = UnresolvedError{}

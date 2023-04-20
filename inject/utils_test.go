@@ -23,11 +23,10 @@ func Test_Decorate(t *testing.T) {
 		return a
 	}))
 
-	err := c.Invoke(func(t1 t1) {
+	_, err := c.Invoke(func(t1 t1) {
 		require.Equal(t, 100, t1.count)
 	})
 	require.NoError(t, err)
-
 }
 
 func Test_NonSingleton(t *testing.T) {
@@ -46,13 +45,13 @@ func Test_NonSingleton(t *testing.T) {
 		return inst
 	})
 
-	err := c.Invoke(func(t1 t1) {
+	_, err := c.Invoke(func(t1 t1) {
 		require.Equal(t, 1, t1.count)
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, invocationCount)
 
-	err = c.Invoke(func(t1 t1) {
+	_, err = c.Invoke(func(t1 t1) {
 		require.Equal(t, 2, t1.count)
 	})
 	require.NoError(t, err)
@@ -75,15 +74,57 @@ func Test_Singleton(t *testing.T) {
 		return inst
 	}))
 
-	err := c.Invoke(func(t1 t1) {
+	_, err := c.Invoke(func(t1 t1) {
 		require.Equal(t, 1, t1.count)
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, invocationCount)
 
-	err = c.Invoke(func(t1 t1) {
+	_, err = c.Invoke(func(t1 t1) {
 		require.Equal(t, 1, t1.count)
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, invocationCount)
+}
+
+func Test_Resolve(t *testing.T) {
+	c := NewContainer()
+
+	type t1 struct {
+		v1 int
+	}
+
+	type t2 struct {
+		v2 int
+	}
+
+	c.Bind(t1{v1: 99})
+
+	v, err := Resolve(c, t1{})
+	require.NoError(t, err)
+	require.Equal(t, 99, v.v1)
+
+	_, err = Resolve(c, t2{})
+	require.Error(t, err)
+}
+
+func Test_MustResolve(t *testing.T) {
+	c := NewContainer()
+
+	type t1 struct {
+		v1 int
+	}
+
+	type t2 struct {
+		v2 int
+	}
+
+	c.Bind(t1{v1: 99})
+
+	v := MustResolve(c, t1{})
+	require.Equal(t, 99, v.v1)
+
+	require.Panics(t, func() {
+		_ = MustResolve(c, t2{})
+	})
 }

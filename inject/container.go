@@ -68,12 +68,12 @@ func (c *container) Resolve(typ any) (any, error) {
 	}
 	for _, p := range c.parents {
 		v, err := p.Resolve(t)
-		if errors.Is(err, ProviderNotFound) {
+		if errors.Is(err, Unresolved) {
 			continue
 		}
 		return v, err
 	}
-	return nil, ProviderNotFoundError{
+	return nil, UnresolvedError{
 		typ: t,
 	}
 }
@@ -94,17 +94,14 @@ func alignReturn(t reflect.Type, v reflect.Value) any {
 	return v.Interface()
 }
 
-func (c *container) Invoke(fn any, args ...interface{}) error {
+func (c *container) Invoke(fn any, args ...any) (any, error) {
 	v := reflect.ValueOf(fn)
-	_, err := c.invoke(v, args...)
-	return err
-}
-
-func (c *container) MustInvoke(fn any, args ...interface{}) {
-	err := c.Invoke(fn, args...)
-	if err != nil {
-		panic(err)
+	rv, err := c.invoke(v, args...)
+	var out any
+	if rv.IsValid() && rv.CanInterface() {
+		out = rv.Interface()
 	}
+	return out, err
 }
 
 var (
@@ -113,18 +110,33 @@ var (
 	containerInterface = reflect.TypeOf((*Container)(nil)).Elem()
 )
 
-func (c *container) invoke(fn reflect.Value, args ...interface{}) (reflect.Value, error) {
+func (c *container) invoke(fn reflect.Value, args ...any) (reflect.Value, error) {
 	t := fn.Type()
 	if t.Kind() != reflect.Func {
 		return nilValue, fmt.Errorf("unable to invoke non-function type: %s : %+v", t.Name(), fn)
 	}
 
+	inArg := 0
+
 	in := make([]reflect.Value, t.NumIn())
 	for i := 0; i < t.NumIn(); i++ {
 		ft := t.In(i)
+
+		// check positional parameters
+		if inArg < len(args) {
+			arg := args[inArg]
+			argV := reflect.ValueOf(arg)
+			if argV.CanConvert(ft) {
+				in[i] = argV.Convert(ft)
+				inArg++
+				continue
+			}
+		}
+
+		// use type resolution
 		v, err := c.Resolve(ft)
 		if err != nil {
-			return nilValue, fmt.Errorf("%w when resolving arguments for %s", err, funcInfo(fn))
+			return nilValue, fmt.Errorf("%w while resolving argument %d for %s", err, i+1, funcInfo(fn))
 		}
 		in[i] = reflect.ValueOf(v)
 	}

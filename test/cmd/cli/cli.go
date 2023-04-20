@@ -30,7 +30,6 @@ func New() (*cobra.Command, error) {
 
 	command.Converters(
 		c,
-		convert.PackageBasicConfig,
 		convert.CatalogerConfig,
 		convert.GoCatalogerConfig,
 	)

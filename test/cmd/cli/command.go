@@ -18,13 +18,11 @@ func Command(c inject.Container, cfg config.Config, formatOpts *options.Format) 
 			if len(args) == 0 {
 				return fmt.Errorf("require an arg")
 			}
-			c.Bind(options.InputSource{
-				InputSource: args[0],
-			})
 			return config.Load(cfg, cmd, formatOpts)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return c.Invoke(app.Packages)
+			_, err := c.Invoke(app.Packages, args[0])
+			return err
 		},
 	}
 

@@ -5,10 +5,6 @@ import (
 	"github.com/anchore/go-cli-tools/log"
 )
 
-type PackageBasicConfig struct {
-	InputSource string
-}
-
 type CatalogerConfig struct {
 	Enabled []string
 }
@@ -26,7 +22,7 @@ type GoCatalogerConfig struct {
 	NetworkLicenseSearch bool
 }
 
-func Packages(c inject.Container, bc *PackageBasicConfig, cc *CatalogerConfig, gc *GoCatalogerConfig) error {
-	log.Tracef("packages executed with: %v %v %v", bc.InputSource, cc.Enabled, gc.NetworkLicenseSearch)
+func Packages(_ inject.Container, cc *CatalogerConfig, gc *GoCatalogerConfig, input string) error {
+	log.Tracef("packages executed with input: %v enabled: %v search: %v", input, cc.Enabled, gc.NetworkLicenseSearch)
 	return nil
 }

@@ -5,31 +5,22 @@ import (
 	"reflect"
 )
 
-func Invoke[T any](c Container, fn any, args ...interface{}) (T, error) {
-	c2, ok := c.(*container)
+func Invoke[T any](c Container, fn any, args ...any) (T, error) {
 	var t T
-	if !ok {
-		return t, fmt.Errorf("argument is not *container: %+v", c)
-	}
-	fv := reflect.ValueOf(fn)
-	out, err := c2.invoke(fv, args...)
+	v, err := c.Invoke(fn, args...)
 	if err != nil {
 		return t, err
 	}
-	if !out.IsValid() || !out.CanInterface() {
-		return t, fmt.Errorf("unable get valid return value from: %s got: %+v", funcInfo(fv), out)
-	}
-	v := out.Interface()
 	if tv, ok := v.(T); ok {
 		t = tv
 	} else {
 		typ := reflect.TypeOf(t)
-		return t, fmt.Errorf("unable convert return value to expected type from: %s got: %s %+v", funcInfo(fv), typeName(typ), v)
+		return t, fmt.Errorf("unable convert return value to expected type from: %s got: %s %+v", funcInfo(reflect.ValueOf(fn)), typeName(typ), v)
 	}
 	return t, err
 }
 
-func MustInvoke[T any](c Container, fn any, args ...interface{}) T {
+func MustInvoke[T any](c Container, fn any, args ...any) T {
 	out, err := Invoke[T](c, fn, args...)
 	if err != nil {
 		panic(err)

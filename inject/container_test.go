@@ -39,7 +39,7 @@ func Test_Container(t *testing.T) {
 		}
 	})
 
-	err := c.Invoke(func(d data2) {
+	_, err := c.Invoke(func(d data2) {
 		require.NotNil(t, d)
 		require.Equal(t, "2 name", d.name)
 	})
@@ -63,7 +63,7 @@ func Test_Container(t *testing.T) {
 	})
 
 	var d4 data4
-	err = c2.Invoke(func(d data3) {
+	_, err = c2.Invoke(func(d data3) {
 		d4 = data4{
 			name: d.name,
 		}
@@ -80,23 +80,23 @@ func Test_Container(t *testing.T) {
 		return err1{}, fmt.Errorf("an error")
 	})
 
-	err = c3.Invoke(func(err1 err1) {})
+	_, err = c3.Invoke(func(err1 err1) {})
 	require.Error(t, err)
 
 	var d1v2 data1
-	err = c3.Invoke(func(d1 *data1) {
+	_, err = c3.Invoke(func(d1 *data1) {
 		d1v2 = *d1
 	})
 	require.NoError(t, err)
 	require.Equal(t, "d1", d1v2.name)
 
-	err = c3.Invoke(func(d1 *data1) error {
+	_, err = c3.Invoke(func(d1 *data1) error {
 		return fmt.Errorf("direct error")
 	})
 	require.Error(t, err)
 
 	c4 := NewContainer(c3)
-	err = c4.Invoke(func(err1 err1) {})
+	_, err = c4.Invoke(func(err1 err1) {})
 	require.Error(t, err)
 
 	dv3, err := c4.Resolve(data{})
@@ -111,7 +111,7 @@ func Test_Container(t *testing.T) {
 func Test_InjectingContainer(t *testing.T) {
 	c := NewContainer()
 
-	err := c.Invoke(func(c Container) {
+	_, err := c.Invoke(func(c Container) {
 		require.NotNil(t, c)
 	})
 	require.NoError(t, err)
@@ -122,10 +122,38 @@ func Test_UnresolvedDependency(t *testing.T) {
 
 	type unbound struct{}
 
-	err := c.Invoke(func(u unbound) {})
+	_, err := c.Invoke(func(u unbound) {})
 
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "unbound")
 	require.Contains(t, err.Error(), "Test_UnresolvedDependency")
 	require.Contains(t, err.Error(), "container_test.go")
+
+	c.Bind(unbound{})
+	_, err = c.Invoke(func(u unbound, u2 unbound, s string) {})
+
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "string")
+	require.Contains(t, err.Error(), "argument 3")
+	require.Contains(t, err.Error(), "Test_UnresolvedDependency")
+	require.Contains(t, err.Error(), "container_test.go")
+}
+
+func Test_ExtraArgs(t *testing.T) {
+	c := NewContainer()
+
+	type bound1 struct{}
+	type bound2 struct{}
+
+	c.Bind(bound1{}, bound2{})
+
+	var got []any
+	f := func(b1 bound1, b2 bound2, s1 string, s2 string, i1 int) {
+		got = append(got, s1, s2, i1)
+	}
+
+	_, err := c.Invoke(f, "the s1", "the s2", 95)
+
+	require.NoError(t, err)
+	require.Equal(t, []any{"the s1", "the s2", 95}, got)
 }
