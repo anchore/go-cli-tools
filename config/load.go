@@ -19,6 +19,7 @@ import (
 )
 
 func Load(cfg Config, cmd *cobra.Command, configurations ...any) error {
+	// allow for nested options to be specified via environment variables
 	// e.g. pod.context = APPNAME_POD_CONTEXT
 	v := viper.NewWithOptions(viper.EnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_")))
 
@@ -26,10 +27,6 @@ func Load(cfg Config, cmd *cobra.Command, configurations ...any) error {
 }
 
 func LoadAt(cfg Config, cmd *cobra.Command, path string, configuration any) error {
-	// allow for nested options to be specified via environment variables
-	// e.g. pod.context = APPNAME_POD_CONTEXT
-	v := viper.NewWithOptions(viper.EnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_")))
-
 	t := reflect.TypeOf(configuration)
 	config := reflect.StructOf([]reflect.StructField{{
 		Name: upperFirst(path),
@@ -40,7 +37,7 @@ func LoadAt(cfg Config, cmd *cobra.Command, path string, configuration any) erro
 	value := reflect.New(config)
 	value.Elem().Field(0).Set(reflect.ValueOf(configuration))
 
-	return load(v, cmd, cfg.AppName, cfg.ConfigFile, value.Interface())
+	return Load(cfg, cmd, value.Interface())
 }
 
 func upperFirst(p string) string {
