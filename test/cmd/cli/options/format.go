@@ -14,6 +14,6 @@ func NewFormat() *Format {
 	}
 }
 
-func (r *Format) BindFlags(flags *pflag.FlagSet) {
+func (r *Format) AddFlags(flags *pflag.FlagSet) {
 	flags.StringVarP(&r.Output, "output", "o", r.Output, "output options")
 }

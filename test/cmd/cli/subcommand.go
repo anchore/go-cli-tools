@@ -18,7 +18,7 @@ func Subcommand(cfg config.Config, formatOpts *options.Format) *cobra.Command {
 		},
 	}
 
-	formatOpts.BindFlags(cmd.Flags())
+	formatOpts.AddFlags(cmd.Flags())
 
 	return cmd
 }

@@ -26,7 +26,7 @@ func Command(c inject.Container, cfg config.Config, formatOpts *options.Format) 
 		},
 	}
 
-	formatOpts.BindFlags(cmd.Flags())
+	formatOpts.AddFlags(cmd.Flags())
 
 	return cmd
 }
