@@ -1,6 +1,10 @@
 package log
 
-import "github.com/spf13/pflag"
+import (
+	"github.com/spf13/pflag"
+
+	"github.com/anchore/fangs/config"
+)
 
 type Level string
 
@@ -35,7 +39,9 @@ func (c *Config) AddFlags(flags *pflag.FlagSet) {
 	flags.BoolVarP(&c.Quiet, "quiet", "q", false, "quiet logs")
 }
 
-func (c *Config) PostProcess() error {
+func (c *Config) PostLoad() error {
 	// automatically configure the default logger after reading configuration
 	return DefaultLogger(*c)
 }
+
+var _ config.PostLoad = (*Config)(nil)

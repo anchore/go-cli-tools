@@ -3,15 +3,15 @@ package cli
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/anchore/fangs/config"
 	"github.com/anchore/go-cli-tools/command"
-	"github.com/anchore/go-cli-tools/config"
 	"github.com/anchore/go-cli-tools/inject"
 	"github.com/anchore/go-cli-tools/log"
 	"github.com/anchore/go-cli-tools/test/cmd/cli/convert"
 	"github.com/anchore/go-cli-tools/test/cmd/cli/options"
 )
 
-func New() (*cobra.Command, error) {
+func New() *cobra.Command {
 	c := inject.NewContainer()
 
 	c.Bind(
@@ -45,5 +45,5 @@ func New() (*cobra.Command, error) {
 		)...,
 	)
 
-	return r, nil
+	return r
 }

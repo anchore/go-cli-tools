@@ -3,7 +3,7 @@ package cli
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/anchore/go-cli-tools/config"
+	"github.com/anchore/fangs/config"
 	"github.com/anchore/go-cli-tools/log"
 	"github.com/anchore/go-cli-tools/test/cmd/cli/options"
 )
