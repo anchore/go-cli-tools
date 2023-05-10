@@ -3,7 +3,7 @@ module github.com/anchore/go-cli-tools
 go 1.19
 
 require (
-	github.com/anchore/fangs v0.0.0-20230502175214-a9aa65c1b623
+	github.com/anchore/fangs v0.0.0-20230509200458-37a1ede7b92a
 	github.com/anchore/go-logger v0.0.0-20230120230012-47be9bb822a2
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5

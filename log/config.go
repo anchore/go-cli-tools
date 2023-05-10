@@ -3,7 +3,7 @@ package log
 import (
 	"github.com/spf13/pflag"
 
-	"github.com/anchore/fangs/config"
+	"github.com/anchore/fangs"
 )
 
 type Level string
@@ -44,4 +44,4 @@ func (c *Config) PostLoad() error {
 	return DefaultLogger(*c)
 }
 
-var _ config.PostLoad = (*Config)(nil)
+var _ fangs.PostLoad = (*Config)(nil)

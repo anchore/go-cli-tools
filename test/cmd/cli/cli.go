@@ -3,7 +3,7 @@ package cli
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/anchore/fangs/config"
+	"github.com/anchore/fangs"
 	"github.com/anchore/go-cli-tools/command"
 	"github.com/anchore/go-cli-tools/inject"
 	"github.com/anchore/go-cli-tools/log"
@@ -16,7 +16,7 @@ func New() *cobra.Command {
 
 	c.Bind(
 		// global options Root adds to persistent flags
-		config.NewConfig("app"),
+		fangs.NewConfig("app"),
 		log.NewConfig(),
 
 		// format options are shared among multiple commands
