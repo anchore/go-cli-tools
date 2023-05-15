@@ -3,8 +3,6 @@ TEMP_DIR := ./.tmp
 # Command templates #################################
 LINT_CMD := $(TEMP_DIR)/golangci-lint run --tests=false
 GOIMPORTS_CMD := $(TEMP_DIR)/gosimports -local github.com/anchore
-RELEASE_CMD := $(TEMP_DIR)/goreleaser release --clean
-SNAPSHOT_CMD := $(RELEASE_CMD) --skip-publish --skip-sign --snapshot
 CHRONICLE_CMD = $(TEMP_DIR)/chronicle
 GLOW_CMD = $(TEMP_DIR)/glow
 
@@ -13,10 +11,6 @@ GOLANGCILINT_VERSION := v1.52.1
 GOSIMPORTS_VERSION := v0.3.8
 BOUNCER_VERSION := v0.4.0
 CHRONICLE_VERSION := v0.6.0
-GORELEASER_VERSION := v1.16.2
-YAJSV_VERSION := v1.4.1
-COSIGN_VERSION := v1.13.1
-QUILL_VERSION := v0.2.0
 GLOW_VERSION := v1.5.0
 
 # Formatting variables #################################
@@ -79,16 +73,11 @@ bootstrap: $(TEMP_DIR) bootstrap-go bootstrap-tools ## Download and install all 
 
 .PHONY: bootstrap-tools
 bootstrap-tools: $(TEMP_DIR)
-	curl -sSfL https://raw.githubusercontent.com/anchore/quill/main/install.sh | sh -s -- -b $(TEMP_DIR)/ $(QUILL_VERSION)
 	GO111MODULE=off GOBIN=$(realpath $(TEMP_DIR)) go get -u golang.org/x/perf/cmd/benchstat
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(TEMP_DIR)/ $(GOLANGCILINT_VERSION)
 	curl -sSfL https://raw.githubusercontent.com/wagoodman/go-bouncer/master/bouncer.sh | sh -s -- -b $(TEMP_DIR)/ $(BOUNCER_VERSION)
 	curl -sSfL https://raw.githubusercontent.com/anchore/chronicle/main/install.sh | sh -s -- -b $(TEMP_DIR)/ $(CHRONICLE_VERSION)
-	.github/scripts/goreleaser-install.sh -d -b $(TEMP_DIR)/ $(GORELEASER_VERSION)
-	# the only difference between goimports and gosimports is that gosimports removes extra whitespace between import blocks (see https://github.com/golang/go/issues/20818)
 	GOBIN="$(realpath $(TEMP_DIR))" go install github.com/rinchsan/gosimports/cmd/gosimports@$(GOSIMPORTS_VERSION)
-	GOBIN="$(realpath $(TEMP_DIR))" go install github.com/neilpa/yajsv@$(YAJSV_VERSION)
-	GOBIN="$(realpath $(TEMP_DIR))" go install github.com/sigstore/cosign/cmd/cosign@$(COSIGN_VERSION)
 	GOBIN="$(realpath $(TEMP_DIR))" go install github.com/charmbracelet/glow@$(GLOW_VERSION)
 
 .PHONY: bootstrap-go
@@ -121,12 +110,12 @@ format:  ## Auto-format all source code + run golangci lint fixers
 	$(call title,Running formatting)
 	gofmt -w -s .
 	$(GOIMPORTS_CMD) -w .
+	go mod tidy
 
 .PHONY: lint-fix
 lint-fix: format ## Auto-format all source code + run golangci lint fixers
 	$(call title,Running lint fixers)
 	$(LINT_CMD) --fix
-	go mod tidy
 
 .PHONY: check-licenses
 check-licenses:  ## Ensure transitive dependencies are compliant with the current license policy
@@ -143,7 +132,7 @@ check-json-schema-drift:
 ## Testing targets #################################
 
 .PHONY: unit
-unit: $(TEMP_DIR) fixtures  ## Run unit tests (with coverage)
+unit: $(TEMP_DIR)  ## Run unit tests (with coverage)
 	$(call title,Running unit tests)
 	go test -coverprofile $(TEMP_DIR)/unit-coverage-details.txt $(shell go list ./... | grep -v anchore/syft/test)
 	@.github/scripts/coverage.py $(COVERAGE_THRESHOLD) $(TEMP_DIR)/unit-coverage-details.txt
@@ -214,13 +203,6 @@ fingerprints:
 	# for CLI test fixtures
 	cd test/cli/test-fixtures && \
 		make cache.fingerprint
-
-.PHONY: fixtures
-fixtures:
-	$(call title,Generating test fixtures)
-	cd syft/pkg/cataloger/java/test-fixtures/java-builds && make
-	cd syft/pkg/cataloger/rpm/test-fixtures && make
-	cd syft/pkg/cataloger/binary/test-fixtures && make
 
 .PHONY: show-test-image-cache
 show-test-image-cache:  ## Show all docker and image tar cache
